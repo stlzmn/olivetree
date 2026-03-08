@@ -6,28 +6,28 @@ use axum::{
     extract::Extension,
     routing::{get, post},
 };
-use distributed_cluster::executor::executor::TaskExecutor;
-use distributed_cluster::executor::handlers::{
+use olive_tree::executor::executor::TaskExecutor;
+use olive_tree::executor::handlers::{
     handle_get_task_internal, handle_get_task_status, handle_internal_submit_task,
     handle_replicate_task, handle_submit_task, handle_task_partition_dump,
 };
-use distributed_cluster::executor::protocol::{
+use olive_tree::executor::protocol::{
     ENDPOINT_INTERNAL_SUBMIT, ENDPOINT_SUBMIT_TASK, ENDPOINT_TASK_INTERNAL_GET,
     ENDPOINT_TASK_PARTITION_DUMP, ENDPOINT_TASK_REPLICATE, ENDPOINT_TASK_STATUS,
 };
-use distributed_cluster::executor::queue::DistributedQueue;
-use distributed_cluster::executor::registry::TaskHandlerRegistry;
-use distributed_cluster::executor::types::Task;
-use distributed_cluster::ingestion::handlers::{handle_ingest_gutenberg, handle_ingest_status};
-use distributed_cluster::ingestion::types::RawDocument;
-use distributed_cluster::membership::service::MembershipService;
-use distributed_cluster::search::handlers::{handle_create_book, handle_search};
-use distributed_cluster::search::tokenizer::tokenize_text;
-use distributed_cluster::search::types::BookMetadata;
-use distributed_cluster::storage::handlers::*;
-use distributed_cluster::storage::memory::DistributedMap;
-use distributed_cluster::storage::partitioner::PartitionManager;
-use distributed_cluster::storage::protocol::{
+use olive_tree::executor::queue::DistributedQueue;
+use olive_tree::executor::registry::TaskHandlerRegistry;
+use olive_tree::executor::types::Task;
+use olive_tree::ingestion::handlers::{handle_ingest_gutenberg, handle_ingest_status};
+use olive_tree::ingestion::types::RawDocument;
+use olive_tree::membership::service::MembershipService;
+use olive_tree::search::handlers::{handle_create_book, handle_search};
+use olive_tree::search::tokenizer::tokenize_text;
+use olive_tree::search::types::BookMetadata;
+use olive_tree::storage::handlers::*;
+use olive_tree::storage::memory::DistributedMap;
+use olive_tree::storage::partitioner::PartitionManager;
+use olive_tree::storage::protocol::{
     ENDPOINT_FORWARD_PUT, ENDPOINT_GET, ENDPOINT_GET_INTERNAL, ENDPOINT_PARTITION_DUMP,
     ENDPOINT_PUT, ENDPOINT_REPLICATE, ForwardPutRequest, GetResponse, PutRequest, PutResponse,
     ReplicateRequest,
@@ -129,7 +129,7 @@ async fn main() -> anyhow::Result<()> {
         let datalake = datalake_clone.clone();
         async move {
             let Task::Execute { payload, .. } = task;
-            let payload: distributed_cluster::ingestion::types::IndexTaskPayload =
+            let payload: olive_tree::ingestion::types::IndexTaskPayload =
                 serde_json::from_value(payload)?;
 
             let Some(raw_doc) = datalake.get(&payload.book_id).await else {
@@ -621,7 +621,7 @@ async fn handle_partition_dump_book(
     partition: Path<u32>,
 ) -> (
     StatusCode,
-    Json<distributed_cluster::storage::protocol::PartitionDumpResponse>,
+    Json<olive_tree::storage::protocol::PartitionDumpResponse>,
 ) {
     handle_partition_dump::<String, BookMetadata>(map, partition).await
 }
@@ -666,7 +666,7 @@ async fn handle_partition_dump_datalake(
     partition: Path<u32>,
 ) -> (
     StatusCode,
-    Json<distributed_cluster::storage::protocol::PartitionDumpResponse>,
+    Json<olive_tree::storage::protocol::PartitionDumpResponse>,
 ) {
     handle_partition_dump::<String, RawDocument>(map, partition).await
 }
@@ -711,7 +711,7 @@ async fn handle_partition_dump_index(
     partition: Path<u32>,
 ) -> (
     StatusCode,
-    Json<distributed_cluster::storage::protocol::PartitionDumpResponse>,
+    Json<olive_tree::storage::protocol::PartitionDumpResponse>,
 ) {
     handle_partition_dump::<String, Vec<String>>(map, partition).await
 }

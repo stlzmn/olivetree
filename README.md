@@ -1,4 +1,4 @@
-# mycelium
+# olive-tree
 
 Hazelcast-inspired distributed data grid playground in Rust.
 
@@ -33,11 +33,11 @@ If you're into distributed systems and Rust, this repo is for you.
 ## Architecture
 
 Core library modules:
-- `distributed_cluster::membership`
-- `distributed_cluster::storage`
-- `distributed_cluster::executor`
-- `distributed_cluster::ingestion`
-- `distributed_cluster::search`
+- `olive_tree::membership`
+- `olive_tree::storage`
+- `olive_tree::executor`
+- `olive_tree::ingestion`
+- `olive_tree::search`
 
 Runnable example:
 - `examples/book_search_engine.rs`
