@@ -155,8 +155,8 @@ fn parse_metadata(
     word_count: usize,
     unique_words: usize,
 ) -> BookMetadata {
-    let title = extract_header_field(header, "Title:")
-        .unwrap_or_else(|| format!("Book {}", book_id));
+    let title =
+        extract_header_field(header, "Title:").unwrap_or_else(|| format!("Book {}", book_id));
     let author = extract_header_field(header, "Author:").unwrap_or_else(|| "Unknown".to_string());
     let language =
         extract_header_field(header, "Language:").unwrap_or_else(|| "unknown".to_string());

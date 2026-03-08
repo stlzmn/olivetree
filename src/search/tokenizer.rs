@@ -21,4 +21,3 @@ pub fn tokenize_query(query: &str) -> Vec<String> {
         .filter(|word| !word.is_empty())
         .collect()
 }
-

@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::executor::registry::TaskHandlerRegistry;
-    use crate::executor::types::{Task, TaskId, TaskStatus, TaskEntry, now_ms};
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use crate::executor::types::{Task, TaskEntry, TaskId, TaskStatus, now_ms};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     // ============================================================
     // TEST 1: TaskHandlerRegistry - rejestracja i wykonywanie
@@ -57,7 +57,12 @@ mod tests {
 
         // ASSERT: Powinien zwrócić błąd
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown task handler"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Unknown task handler")
+        );
     }
 
     #[tokio::test]
@@ -139,9 +144,15 @@ mod tests {
 
         assert_ne!(TaskStatus::Pending, TaskStatus::Running);
 
-        let failed1 = TaskStatus::Failed { error: "test".to_string() };
-        let failed2 = TaskStatus::Failed { error: "test".to_string() };
-        let failed3 = TaskStatus::Failed { error: "other".to_string() };
+        let failed1 = TaskStatus::Failed {
+            error: "test".to_string(),
+        };
+        let failed2 = TaskStatus::Failed {
+            error: "test".to_string(),
+        };
+        let failed3 = TaskStatus::Failed {
+            error: "other".to_string(),
+        };
 
         assert_eq!(failed1, failed2);
         assert_ne!(failed1, failed3);
@@ -222,7 +233,10 @@ mod tests {
         let map = index_map.lock().await;
 
         // "rust" powinien być w indeksie
-        assert!(map.contains_key("rust"), "Token 'rust' powinien być w indeksie");
+        assert!(
+            map.contains_key("rust"),
+            "Token 'rust' powinien być w indeksie"
+        );
         assert!(map["rust"].contains(&"book-001".to_string()));
 
         // "programming" też
@@ -249,7 +263,7 @@ mod tests {
         // więc "Go" nie będzie w indeksie (tylko 2 znaki)
         let books = vec![
             ("book-001", "Rust Programming"),
-            ("book-002", "Programming with Golang"),  // "golang" zamiast "go"
+            ("book-002", "Programming with Golang"), // "golang" zamiast "go"
             ("book-003", "Python Programming"),
         ];
 
@@ -302,9 +316,11 @@ mod tests {
             async move {
                 let Task::Execute { payload, .. } = task;
 
-                let book_id = payload["book_id"].as_str()
+                let book_id = payload["book_id"]
+                    .as_str()
                     .ok_or_else(|| anyhow::anyhow!("Missing book_id"))?;
-                let title = payload["title"].as_str()
+                let title = payload["title"]
+                    .as_str()
                     .ok_or_else(|| anyhow::anyhow!("Missing title"))?;
 
                 let tokens = tokenize_text(title);

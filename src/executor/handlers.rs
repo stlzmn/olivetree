@@ -83,9 +83,7 @@ pub async fn handle_get_task_status_internal(
                 created_at: entry.created_at,
             })),
         ),
-        None => {
-            (StatusCode::NOT_FOUND, Json(None))
-        }
+        None => (StatusCode::NOT_FOUND, Json(None)),
     }
 }
 
@@ -96,10 +94,7 @@ pub async fn handle_get_task_internal(
     let task_id = TaskId(task_id_str);
 
     match queue.get_task_local(&task_id) {
-        Some(entry) => (
-            StatusCode::OK,
-            Json(GetTaskResponse { task: Some(entry) }),
-        ),
+        Some(entry) => (StatusCode::OK, Json(GetTaskResponse { task: Some(entry) })),
         None => (StatusCode::NOT_FOUND, Json(GetTaskResponse { task: None })),
     }
 }
@@ -111,24 +106,25 @@ pub async fn handle_get_task_status(
     let task_id = TaskId(task_id_str);
     let partition = queue.partitioner.get_partition(&task_id.0);
     let owners = queue.partitioner.get_owners(partition);
-    
+
     if !owners.is_empty() && owners[0] == queue.membership.local_node.id {
         match queue.get_task(&task_id).await {
             Some(entry) => {
-                return (StatusCode::OK, Json(Some(TaskStatusResponse {
-                    task_id,
-                    status: entry.status,
-                    assigned_to: entry.assigned_to,
-                    created_at: entry.created_at,
-                })));
+                return (
+                    StatusCode::OK,
+                    Json(Some(TaskStatusResponse {
+                        task_id,
+                        status: entry.status,
+                        assigned_to: entry.assigned_to,
+                        created_at: entry.created_at,
+                    })),
+                );
             }
             None => {
                 return (StatusCode::NOT_FOUND, Json(None));
             }
         }
     }
-
-    
 
     match queue.get_task(&task_id).await {
         Some(entry) => {

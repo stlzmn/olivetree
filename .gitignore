@@ -1,3 +1,4 @@
-*.md
 /target
 /ui/target
+
+/src/target

@@ -1,9 +1,9 @@
-pub mod types;
+pub mod executor;
+pub mod handlers;
 pub mod protocol;
 pub mod queue;
-pub mod handlers;
-pub mod executor;
 pub mod registry;
+pub mod types;
 
 #[cfg(test)]
 mod tests;

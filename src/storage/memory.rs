@@ -63,8 +63,7 @@ where
         if self.processed_ops.len() > 10_000 {
             self.processed_ops.clear();
         }
-        self.processed_ops
-            .insert(op_id.to_string(), now_ms());
+        self.processed_ops.insert(op_id.to_string(), now_ms());
         true
     }
 
@@ -386,11 +385,7 @@ where
         }
     }
 
-    pub async fn fetch_partition(
-        &self,
-        owner_id: &NodeId,
-        partition: u32,
-    ) -> Result<Vec<(K, V)>> {
+    pub async fn fetch_partition(&self, owner_id: &NodeId, partition: u32) -> Result<Vec<(K, V)>> {
         let node = self
             .membership
             .get_member(owner_id)
@@ -398,10 +393,7 @@ where
 
         let url = format!(
             "http://{}{}{}/{}",
-            node.http_addr,
-            self.base_path,
-            ENDPOINT_PARTITION_DUMP,
-            partition
+            node.http_addr, self.base_path, ENDPOINT_PARTITION_DUMP, partition
         );
 
         let response = self
@@ -412,7 +404,10 @@ where
             return Ok(Vec::new());
         }
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!("Partition dump failed {}", response.status()));
+            return Err(anyhow::anyhow!(
+                "Partition dump failed {}",
+                response.status()
+            ));
         }
 
         let dump: PartitionDumpResponse = response.json().await?;
@@ -439,8 +434,14 @@ where
         if owners.len() > 1 {
             let op_id = Uuid::new_v4().to_string();
             for backup in owners.iter().skip(1) {
-                self.replicate_to_backup(backup, partition, op_id.clone(), key.clone(), value.clone())
-                    .await?;
+                self.replicate_to_backup(
+                    backup,
+                    partition,
+                    op_id.clone(),
+                    key.clone(),
+                    value.clone(),
+                )
+                .await?;
             }
         }
 

@@ -118,7 +118,8 @@ mod tests {
         let encoded = bincode::serialize(&node).expect("Bincode serialization failed");
 
         // Deserialize
-        let restored: Node = bincode::deserialize(&encoded).expect("Bincode deserialization failed");
+        let restored: Node =
+            bincode::deserialize(&encoded).expect("Bincode deserialization failed");
 
         assert_eq!(restored.id, node.id);
         assert_eq!(restored.state, NodeState::Suspect);
@@ -287,9 +288,7 @@ mod tests {
     #[tokio::test]
     async fn test_membership_get_member() {
         let bind_addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
-        let service = MembershipService::new(bind_addr, vec![])
-            .await
-            .unwrap();
+        let service = MembershipService::new(bind_addr, vec![]).await.unwrap();
 
         // Get existing member (self)
         let member = service.get_member(&service.local_node.id);
@@ -305,9 +304,7 @@ mod tests {
     #[tokio::test]
     async fn test_membership_http_addr_calculation() {
         let bind_addr: SocketAddr = "127.0.0.1:5000".parse().unwrap();
-        let service = MembershipService::new(bind_addr, vec![])
-            .await
-            .unwrap();
+        let service = MembershipService::new(bind_addr, vec![]).await.unwrap();
 
         // HTTP port should be gossip port + 1000
         assert_eq!(service.local_node.gossip_addr.port(), 5000);

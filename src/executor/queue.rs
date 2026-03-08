@@ -426,9 +426,7 @@ impl DistributedQueue {
 
         let url = format!(
             "http://{}{}/{}",
-            node.http_addr,
-            ENDPOINT_TASK_PARTITION_DUMP,
-            partition
+            node.http_addr, ENDPOINT_TASK_PARTITION_DUMP, partition
         );
 
         let response = self
@@ -439,7 +437,10 @@ impl DistributedQueue {
             return Ok(Vec::new());
         }
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!("Task partition dump failed {}", response.status()));
+            return Err(anyhow::anyhow!(
+                "Task partition dump failed {}",
+                response.status()
+            ));
         }
 
         let dump: TaskPartitionDumpResponse = response.json().await?;
