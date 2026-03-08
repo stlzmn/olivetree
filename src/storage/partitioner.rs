@@ -3,17 +3,23 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
+/// Maps keys to partitions and partitions to owner nodes.
 pub struct PartitionManager {
+    /// Number of partitions used by the cluster.
     pub num_partitions: u32,
     replication_factor: usize,
     membership: Arc<MembershipService>,
 }
 
 impl PartitionManager {
+    /// Creates a partition manager with default replication factor (`2`).
     pub fn new(membership: Arc<MembershipService>) -> Arc<Self> {
         Self::new_with_replication(membership, 2)
     }
 
+    /// Creates a partition manager with explicit replication factor.
+    ///
+    /// Replication factor is clamped to at least `1`.
     pub fn new_with_replication(
         membership: Arc<MembershipService>,
         replication_factor: usize,
@@ -25,6 +31,7 @@ impl PartitionManager {
         })
     }
 
+    /// Returns deterministic partition id for a key.
     pub fn get_partition(&self, key: &str) -> u32 {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
@@ -32,6 +39,10 @@ impl PartitionManager {
         hash % self.num_partitions
     }
 
+    /// Returns owner node ids for a partition.
+    ///
+    /// The first entry is the primary owner and the remaining entries
+    /// are backups.
     pub fn get_owners(&self, partition: u32) -> Vec<NodeId> {
         let alive_nodes = self.membership.get_alive_members();
         if alive_nodes.is_empty() {
@@ -48,6 +59,7 @@ impl PartitionManager {
             .collect()
     }
 
+    /// Returns partitions where the local node is the primary owner.
     pub fn my_primary_partitions(&self) -> Vec<u32> {
         let my_id = &self.membership.local_node.id;
 
@@ -59,6 +71,7 @@ impl PartitionManager {
             .collect()
     }
 
+    /// Returns partitions where the local node is a backup owner.
     pub fn my_backup_partitions(&self) -> Vec<u32> {
         let my_id = &self.membership.local_node.id;
 

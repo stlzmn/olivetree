@@ -1,7 +1,14 @@
 [package]
 name = "olive-tree"
 version = "0.1.0"
+authors = ["stolzmann",]
 edition = "2024"
+description = "Hazelcast like distributed data grid in Rust"
+readme = "README.md"
+repository = "https://github.com/stlzmn/olivetree"
+license = "MIT"
+keywords = ["distributed", "cluster"]
+categories = ["caching", "network-programming", "concurrency", "asynchronous"] 
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }

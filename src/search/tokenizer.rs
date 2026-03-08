@@ -1,6 +1,7 @@
 use regex::Regex;
 use std::collections::HashSet;
 
+/// Tokenizes a document body into unique lowercase words (`len > 2`).
 pub fn tokenize_text(text: &str) -> HashSet<String> {
     let re = Regex::new(r"\b[a-zA-Z]+\b").unwrap();
     re.find_iter(&text.to_lowercase())
@@ -9,6 +10,7 @@ pub fn tokenize_text(text: &str) -> HashSet<String> {
         .collect()
 }
 
+/// Tokenizes a query into ordered lowercase words (`len > 2`).
 pub fn tokenize_query(query: &str) -> Vec<String> {
     query
         .to_lowercase()

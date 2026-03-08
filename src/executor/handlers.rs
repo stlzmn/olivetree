@@ -5,6 +5,7 @@ use super::types::*;
 use axum::{Extension, Json, extract::Path, http::StatusCode};
 use std::sync::Arc;
 
+/// Public handler for `POST /task/submit`.
 pub async fn handle_submit_task(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Json(req): Json<SubmitTaskRequest>,
@@ -26,6 +27,7 @@ pub async fn handle_submit_task(
     }
 }
 
+/// Internal handler for forwarded tasks submitted to partition primary.
 pub async fn handle_internal_submit_task(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Json(req): Json<ForwardTaskRequest>,
@@ -67,6 +69,7 @@ pub async fn handle_internal_submit_task(
     )
 }
 
+/// Internal handler returning task status/details by id.
 pub async fn handle_get_task_status_internal(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Path(task_id_str): Path<String>,
@@ -87,6 +90,7 @@ pub async fn handle_get_task_status_internal(
     }
 }
 
+/// Internal handler returning locally stored task entry by id.
 pub async fn handle_get_task_internal(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Path(task_id_str): Path<String>,
@@ -99,6 +103,7 @@ pub async fn handle_get_task_internal(
     }
 }
 
+/// Public handler returning task status by id.
 pub async fn handle_get_task_status(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Path(task_id_str): Path<String>,
@@ -146,6 +151,7 @@ pub async fn handle_get_task_status(
     }
 }
 
+/// Internal handler storing replicated task entry on backup owner.
 pub async fn handle_replicate_task(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Json(req): Json<ReplicateTaskRequest>,
@@ -161,6 +167,7 @@ pub async fn handle_replicate_task(
     StatusCode::OK
 }
 
+/// Internal handler returning all tasks for one partition.
 pub async fn handle_task_partition_dump(
     Extension(queue): Extension<Arc<DistributedQueue>>,
     Path(partition): Path<u32>,

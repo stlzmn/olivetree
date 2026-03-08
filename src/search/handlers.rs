@@ -11,26 +11,38 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Query parameters accepted by `GET /search`.
 #[derive(Deserialize)]
 pub struct SearchParams {
+    /// Search query text.
     pub q: String,
+    /// Page size (default: `10`).
     pub limit: Option<usize>,
+    /// Number of items to skip (default: `0`).
     pub offset: Option<usize>,
 }
 
+/// Payload for creating a new book metadata record.
 #[derive(Deserialize)]
 pub struct CreateBookRequest {
+    /// Book title.
     pub title: String,
+    /// Book author.
     pub author: String,
+    /// Book language code or label.
     pub language: String,
+    /// Publication/release year if known.
     pub year: Option<u32>,
 }
 
+/// Response returned after creating a book.
 #[derive(Serialize)]
 pub struct CreateBookResponse {
+    /// Assigned book id.
     pub book_id: String,
 }
 
+/// Handler for creating a book and scheduling indexing task.
 pub async fn handle_create_book(
     Extension(books_map): Extension<Arc<DistributedMap<String, BookMetadata>>>,
     Extension(queue): Extension<Arc<DistributedQueue>>,
@@ -77,6 +89,7 @@ pub async fn handle_create_book(
     }
 }
 
+/// Handler for `GET /search`.
 pub async fn handle_search(
     Query(params): Query<SearchParams>,
     Extension(index_map): Extension<Arc<DistributedMap<String, Vec<String>>>>,

@@ -14,9 +14,14 @@ const FAILURE_DETECTION_INTERVAL: Duration = Duration::from_secs(2);
 const SUSPECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DEAD_TIMEOUT: Duration = Duration::from_secs(10);
 
-// struct for membership management
+/// Background membership service using UDP gossip.
+///
+/// It tracks known cluster nodes and their liveness states, and provides
+/// helper methods used by partitioning and replication layers.
 pub struct MembershipService {
-    pub local_node: Node,                    // description of local node, the "SELF"
+    /// Descriptor of the local node (self).
+    pub local_node: Node, // description of local node, the "SELF"
+    /// Current local view of known cluster members.
     pub members: Arc<DashMap<NodeId, Node>>, // map of the other members of the cluster, so to know
     // where to send requests and stuff
     socket: Arc<UdpSocket>, // udp socket, a meant to make any network call regarding membership
@@ -26,6 +31,10 @@ pub struct MembershipService {
 }
 
 impl MembershipService {
+    /// Creates a new membership service bound to `bind_addr`.
+    ///
+    /// If `seed_nodes` is not empty, the service sends a `Join` message
+    /// to each seed node during initialization.
     pub async fn new(bind_addr: SocketAddr, seed_nodes: Vec<SocketAddr>) -> Result<Arc<Self>> {
         let socket = UdpSocket::bind(bind_addr).await?; // creation of the udp socket, async op so
         // we await not to block other stuff,
@@ -80,7 +89,7 @@ impl MembershipService {
             incarnation: incarnation_counter,
         }))
     }
-    // we launch here all async tasks in loops, we want it to work "infinitely"
+    /// Starts background gossip, receive and failure-detection loops.
     pub async fn start(self: Arc<Self>) {
         tracing::info!("Starting membership service...");
 
@@ -114,12 +123,12 @@ impl MembershipService {
         tracing::info!("All background tasks started");
     }
 
-    // simple method for getting all members of the cluster, (or none if empty)
+    /// Returns one member by node id, if present in the local view.
     pub fn get_member(&self, node_id: &NodeId) -> Option<Node> {
         self.members.get(node_id).map(|entry| entry.clone())
     }
 
-    // method for getting ALIVE members of the cluster
+    /// Returns all members currently marked as [`NodeState::Alive`].
     pub fn get_alive_members(&self) -> Vec<Node> {
         self.members
             .iter() // iter by the cluster members (DashMap, so we have key and value)

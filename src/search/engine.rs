@@ -4,6 +4,9 @@ use crate::storage::memory::DistributedMap;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Executes token-based search and returns `(metadata, score)` pairs.
+///
+/// Scoring is currently a count of matched query tokens.
 pub async fn search(
     query: &str,
     index_map: Arc<DistributedMap<String, Vec<String>>>,

@@ -14,6 +14,7 @@ use super::protocol::{
     ReplicateRequest,
 };
 
+/// Generic `PUT` handler for distributed maps.
 pub async fn handle_put<K, V>(
     Extension(map): Extension<Arc<DistributedMap<K, V>>>,
     Json(req): Json<PutRequest>,
@@ -57,6 +58,7 @@ where
     }
 }
 
+/// Generic `GET` handler that may query remote owners.
 pub async fn handle_get<K, V>(
     Extension(map): Extension<Arc<DistributedMap<K, V>>>,
     Path(key_str): Path<String>,
@@ -97,6 +99,7 @@ where
     }
 }
 
+/// Internal local-only `GET` handler used by owner-to-owner reads.
 pub async fn handle_get_internal<K, V>(
     Extension(map): Extension<Arc<DistributedMap<K, V>>>,
     Path(key_str): Path<String>,
@@ -141,6 +144,7 @@ where
     }
 }
 
+/// Internal handler that stores data on primary owner and replicates.
 pub async fn handle_forward_put<K, V>(
     Extension(map): Extension<Arc<DistributedMap<K, V>>>,
     Json(req): Json<ForwardPutRequest>,
@@ -187,7 +191,7 @@ where
     }
 }
 
-// Generic handlers - używane przez concrete wrappers w main.rs
+/// Internal handler for backup replication writes.
 pub async fn handle_replicate<K, V>(
     Extension(map): Extension<Arc<DistributedMap<K, V>>>,
     Json(req): Json<ReplicateRequest>,
@@ -234,6 +238,7 @@ where
     }
 }
 
+/// Internal handler that returns all entries for one partition.
 pub async fn handle_partition_dump<K, V>(
     Extension(map): Extension<Arc<DistributedMap<K, V>>>,
     Path(partition): Path<u32>,

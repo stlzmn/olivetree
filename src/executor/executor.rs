@@ -6,6 +6,7 @@ use anyhow::Result;
 use std::sync::Arc;
 use std::time::Duration;
 
+/// Background worker pool that executes tasks from [`DistributedQueue`].
 pub struct TaskExecutor {
     queue: Arc<DistributedQueue>,
     handlers: Arc<TaskHandlerRegistry>,
@@ -13,6 +14,7 @@ pub struct TaskExecutor {
 }
 
 impl TaskExecutor {
+    /// Creates a task executor with fixed worker count.
     pub fn new(
         queue: Arc<DistributedQueue>,
         handlers: Arc<TaskHandlerRegistry>,
@@ -25,6 +27,7 @@ impl TaskExecutor {
         })
     }
 
+    /// Starts worker tasks in the background.
     pub async fn start(self: Arc<Self>) {
         tracing::info!("Starting {} task workers", self.worker_count);
 

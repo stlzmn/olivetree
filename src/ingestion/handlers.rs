@@ -12,6 +12,7 @@ use std::sync::Arc;
 const START_MARKER: &str = "*** START OF THE PROJECT GUTENBERG EBOOK";
 const END_MARKER: &str = "*** END OF THE PROJECT GUTENBERG EBOOK";
 
+/// Downloads and ingests a Project Gutenberg book by id.
 pub async fn handle_ingest_gutenberg(
     Path(book_id): Path<String>,
     Extension(datalake): Extension<Arc<DistributedMap<String, RawDocument>>>,
@@ -112,6 +113,7 @@ pub async fn handle_ingest_gutenberg(
     )
 }
 
+/// Returns ingestion availability status for a book id.
 pub async fn handle_ingest_status(
     Path(book_id): Path<String>,
     Extension(datalake): Extension<Arc<DistributedMap<String, RawDocument>>>,

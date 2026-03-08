@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
+/// Partition-aware distributed key-value map with HTTP forwarding and replication.
 pub struct DistributedMap<K, V> {
     local_data: Arc<DashMap<u32, DashMap<K, V>>>,
     processed_ops: Arc<DashMap<String, u64>>,
@@ -27,10 +28,12 @@ where
     <K as FromStr>::Err: std::fmt::Display,
     V: Clone + Serialize + DeserializeOwned + Send + Sync,
 {
+    /// Creates a map mounted at root path (`""`).
     pub fn new(membership: Arc<MembershipService>, partitioner: Arc<PartitionManager>) -> Self {
         Self::new_with_base(membership, partitioner, "")
     }
 
+    /// Creates a map mounted under a base HTTP path (for example `"/books"`).
     pub fn new_with_base(
         membership: Arc<MembershipService>,
         partitioner: Arc<PartitionManager>,
@@ -170,6 +173,7 @@ where
         Ok(())
     }
 
+    /// Stores an entry on the primary owner and replicates to backups.
     pub async fn store_as_primary(
         &self,
         partition: u32,
@@ -227,6 +231,7 @@ where
         Ok(())
     }
 
+    /// Stores an entry only in local memory for the given partition.
     pub fn store_local(&self, partition: u32, key: K, value: V) {
         let partition_map = self
             .local_data
@@ -235,6 +240,7 @@ where
         partition_map.insert(key, value);
     }
 
+    /// Returns all local entries for one partition.
     pub fn dump_partition(&self, partition: u32) -> Vec<(K, V)> {
         let mut entries = Vec::new();
         if let Some(partition_map) = self.local_data.get(&partition) {
@@ -245,6 +251,7 @@ where
         entries
     }
 
+    /// Returns `true` when this node has any local data for `partition`.
     pub fn has_partition(&self, partition: u32) -> bool {
         self.local_data
             .get(&partition)
@@ -252,20 +259,24 @@ where
             .unwrap_or(false)
     }
 
+    /// Applies a set of partition entries locally (used by resync logic).
     pub fn apply_partition_entries(&self, partition: u32, entries: Vec<(K, V)>) {
         for (key, value) in entries {
             self.store_local(partition, key, value);
         }
     }
 
+    /// Returns the local node id.
     pub fn local_node_id(&self) -> NodeId {
         self.membership.local_node.id.clone()
     }
 
+    /// Returns number of partitions that currently have local data.
     pub fn local_partition_count(&self) -> usize {
         self.local_data.len()
     }
 
+    /// Returns number of local entries across all partitions.
     pub fn local_entry_count(&self) -> usize {
         self.local_data
             .iter()
@@ -273,6 +284,7 @@ where
             .sum()
     }
 
+    /// Stores a replicated entry locally using idempotency guard.
     pub fn store_replica(&self, partition: u32, op_id: String, key: K, value: V) -> Result<()> {
         if !self.should_process(&op_id) {
             return Ok(());
@@ -281,6 +293,7 @@ where
         Ok(())
     }
 
+    /// Gets a key from local storage only.
     pub fn get_local(&self, key: &K) -> Option<V> {
         let partition = self.partitioner.get_partition(&key.to_string());
 
@@ -293,6 +306,7 @@ where
         None
     }
 
+    /// Gets a key from local storage or remote owners.
     pub async fn get(&self, key: &K) -> Option<V> {
         let partition = self.partitioner.get_partition(&key.to_string());
 
@@ -347,6 +361,7 @@ where
         None
     }
 
+    /// Fetches one key from the given owner node through internal API.
     pub async fn fetch_remote(&self, owner_id: &NodeId, key: &K) -> Result<Option<V>> {
         let node = self
             .membership
@@ -385,6 +400,7 @@ where
         }
     }
 
+    /// Fetches a full partition snapshot from a remote owner.
     pub async fn fetch_partition(&self, owner_id: &NodeId, partition: u32) -> Result<Vec<(K, V)>> {
         let node = self
             .membership
@@ -423,6 +439,7 @@ where
         Ok(entries)
     }
 
+    /// Writes locally and replicates to backups without forwarding.
     pub async fn put_local(&self, key: K, value: V) -> Result<()> {
         let partition = self.partitioner.get_partition(&key.to_string());
 
@@ -448,11 +465,13 @@ where
         Ok(())
     }
 
+    /// Writes a key/value pair using generated operation id.
     pub async fn put(&self, key: K, value: V) -> Result<()> {
         let op_id = Uuid::new_v4().to_string();
         self.put_with_op(key, value, op_id).await
     }
 
+    /// Writes a key/value pair with explicit idempotency operation id.
     pub async fn put_with_op(&self, key: K, value: V, op_id: String) -> Result<()> {
         if !self.should_process(&op_id) {
             return Ok(());

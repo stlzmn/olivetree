@@ -10,14 +10,19 @@ use anyhow::Result;
 use dashmap::DashMap;
 use std::sync::Arc;
 
+/// Partitioned distributed queue with primary/backup ownership.
 pub struct DistributedQueue {
+    /// Local tasks grouped by partition id.
     pub local_tasks: Arc<DashMap<u32, DashMap<TaskId, TaskEntry>>>,
+    /// Cluster membership service used for owner lookup.
     pub membership: Arc<MembershipService>,
+    /// Partition ownership manager.
     pub partitioner: Arc<PartitionManager>,
     http_client: reqwest::Client,
 }
 
 impl DistributedQueue {
+    /// Creates an empty queue bound to membership and partition manager.
     pub fn new(membership: Arc<MembershipService>, partitioner: Arc<PartitionManager>) -> Self {
         Self {
             local_tasks: Arc::new(DashMap::new()),
@@ -27,6 +32,10 @@ impl DistributedQueue {
         }
     }
 
+    /// Submits a task and returns generated task id.
+    ///
+    /// If local node is not primary owner for the task partition, the task is
+    /// forwarded to the primary.
     pub async fn submit(&self, task: Task) -> Result<TaskId> {
         let task_id = TaskId::new();
         let partition = self.partitioner.get_partition(&task_id.0);
@@ -77,6 +86,7 @@ impl DistributedQueue {
         Ok(task_id)
     }
 
+    /// Stores one task entry locally in a partition map.
     pub fn store_local(&self, partition: u32, task_id: TaskId, entry: TaskEntry) {
         let partition_map = self
             .local_tasks
@@ -90,6 +100,7 @@ impl DistributedQueue {
         tracing::info!("Stored task in partition {}", partition);
     }
 
+    /// Returns all local task entries for `partition`.
     pub fn dump_partition(&self, partition: u32) -> Vec<(TaskId, TaskEntry)> {
         let mut entries = Vec::new();
         if let Some(partition_map) = self.local_tasks.get(&partition) {
@@ -100,6 +111,7 @@ impl DistributedQueue {
         entries
     }
 
+    /// Returns `true` if local queue has at least one task in `partition`.
     pub fn has_partition(&self, partition: u32) -> bool {
         self.local_tasks
             .get(&partition)
@@ -107,6 +119,7 @@ impl DistributedQueue {
             .unwrap_or(false)
     }
 
+    /// Applies fetched partition entries locally if they are not present yet.
     pub fn apply_partition_entries(&self, partition: u32, entries: Vec<(TaskId, TaskEntry)>) {
         let partition_map = self
             .local_tasks
@@ -119,14 +132,17 @@ impl DistributedQueue {
         }
     }
 
+    /// Returns local node id.
     pub fn local_node_id(&self) -> NodeId {
         self.membership.local_node.id.clone()
     }
 
+    /// Returns number of partitions with local tasks.
     pub fn local_partition_count(&self) -> usize {
         self.local_tasks.len()
     }
 
+    /// Returns number of local tasks across all partitions.
     pub fn local_task_count(&self) -> usize {
         self.local_tasks
             .iter()
@@ -134,6 +150,7 @@ impl DistributedQueue {
             .sum()
     }
 
+    /// Returns status counts as `(pending, running, completed, failed)`.
     pub fn local_task_status_counts(&self) -> (usize, usize, usize, usize) {
         let mut pending = 0;
         let mut running = 0;
@@ -154,6 +171,7 @@ impl DistributedQueue {
         (pending, running, completed, failed)
     }
 
+    /// Stores task on primary owner and replicates it to backup owners.
     pub async fn store_as_primary(
         &self,
         partition: u32,
@@ -248,6 +266,7 @@ impl DistributedQueue {
         Ok(())
     }
 
+    /// Returns tasks that local workers may attempt to claim.
     pub fn my_pending_tasks(&self) -> Vec<(TaskId, TaskEntry)> {
         let my_partitions = self.get_my_primary_partitions();
 
@@ -289,6 +308,7 @@ impl DistributedQueue {
             .collect()
     }
 
+    /// Tries to atomically claim a pending task for local worker.
     pub fn try_claim_task(&self, task_id: &TaskId) -> Result<bool> {
         let partition = self.partitioner.get_partition(&task_id.0);
 
@@ -310,6 +330,7 @@ impl DistributedQueue {
         Ok(false)
     }
 
+    /// Renews running task lease for another 30 seconds.
     pub fn renew_lease(&self, task_id: &TaskId) -> Result<()> {
         let partition = self.partitioner.get_partition(&task_id.0);
 
@@ -331,6 +352,7 @@ impl DistributedQueue {
         Err(anyhow::anyhow!("Task not found"))
     }
 
+    /// Completes task with success or failure result.
     pub fn complete_task(&self, task_id: &TaskId, result: Result<()>) -> Result<()> {
         let partition = self.partitioner.get_partition(&task_id.0);
 
@@ -356,6 +378,7 @@ impl DistributedQueue {
         Err(anyhow::anyhow!("Task not found"))
     }
 
+    /// Returns task entry by id, querying remote owners when needed.
     pub async fn get_task(&self, task_id: &TaskId) -> Option<TaskEntry> {
         match self.get_task_local(task_id) {
             Some(task_entry) => {
@@ -414,6 +437,7 @@ impl DistributedQueue {
         Ok(get_response.task)
     }
 
+    /// Fetches full partition snapshot from remote owner.
     pub async fn fetch_partition(
         &self,
         node_id: &NodeId,
@@ -451,6 +475,7 @@ impl DistributedQueue {
             .collect())
     }
 
+    /// Returns task entry from local storage only.
     pub fn get_task_local(&self, task_id: &TaskId) -> Option<TaskEntry> {
         let partition = self.partitioner.get_partition(&task_id.0);
 
